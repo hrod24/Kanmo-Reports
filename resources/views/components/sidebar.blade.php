@@ -131,12 +131,12 @@
 
             {{-- Upload Data --}}
             <a
-                href="{{ route('upload-data') }}"
+                href="{{ route('upload.index') }}"
                 class="
                     group flex items-center gap-3 rounded-lg px-3 py-2.5
                     text-sm font-medium transition
 
-                    {{ request()->routeIs('upload-data')
+                    {{ request()->routeIs('upload.index')
                         ? 'bg-blue-50 text-blue-600'
                         : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                     }}
