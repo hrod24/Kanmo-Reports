@@ -6,132 +6,78 @@ use App\Imports\AttendanceRegularizationImport;
 use App\Imports\DailyAttendanceImport;
 use App\Imports\LeaveRequestImport;
 use App\Imports\OnDutyImport;
+use App\Models\ImportHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use Throwable;
 
 class UploadController extends Controller
 {
+    private const FILES = [
+        'daily_attendance' => ['label' => 'Daily Attendance', 'import' => DailyAttendanceImport::class],
+        'attendance_regularization' => ['label' => 'Attendance Regularization', 'import' => AttendanceRegularizationImport::class],
+        'on_duty' => ['label' => 'On Duty', 'import' => OnDutyImport::class],
+        'leave_requests' => ['label' => 'Leave Requests', 'import' => LeaveRequestImport::class],
+    ];
+
     public function index()
     {
-        return view('upload-data');
+        $histories = ImportHistory::query()->latest('id')->paginate(10);
+        return view('upload-data', compact('histories'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'daily_attendance' => [
-                'nullable',
-                'file',
-                'mimes:xlsx,xls',
-                'max:20480',
-            ],
-
-            'attendance_regularization' => [
-                'nullable',
-                'file',
-                'mimes:xlsx,xls',
-                'max:20480',
-            ],
-
-            'on_duty' => [
-                'nullable',
-                'file',
-                'mimes:xlsx,xls',
-                'max:20480',
-            ],
-
-            'leave_requests' => [
-                'nullable',
-                'file',
-                'mimes:xlsx,xls',
-                'max:20480',
-            ],
-        ]);
-
-        if (
-            !$request->hasFile('daily_attendance')
-            && !$request->hasFile('attendance_regularization')
-            && !$request->hasFile('on_duty')
-            && !$request->hasFile('leave_requests')
-        ) {
-            return back()->withErrors([
-                'upload' => 'Pilih minimal satu file untuk diimport.',
-            ]);
+        $rules = [];
+        foreach (array_keys(self::FILES) as $field) {
+            $rules[$field] = ['nullable', 'file', 'mimes:xlsx,xls', 'max:20480'];
         }
+        $request->validate($rules);
 
-        $imports = [];
-
-        if ($request->hasFile('daily_attendance')) {
-            $file = $request->file('daily_attendance');
-
-            $imports[] = [
-                'name' => 'Daily Attendance',
-                'file' => $file,
-                'import' => new DailyAttendanceImport(
-                    $file->getClientOriginalName()
-                ),
-            ];
-        }
-
-        if ($request->hasFile('attendance_regularization')) {
-            $file = $request->file('attendance_regularization');
-
-            $imports[] = [
-                'name' => 'Attendance Regularization',
-                'file' => $file,
-                'import' => new AttendanceRegularizationImport(
-                    $file->getClientOriginalName()
-                ),
-            ];
-        }
-
-        if ($request->hasFile('on_duty')) {
-            $file = $request->file('on_duty');
-
-            $imports[] = [
-                'name' => 'On Duty',
-                'file' => $file,
-                'import' => new OnDutyImport(
-                    $file->getClientOriginalName()
-                ),
-            ];
-        }
-
-        if ($request->hasFile('leave_requests')) {
-            $file = $request->file('leave_requests');
-
-            $imports[] = [
-                'name' => 'Leave Requests',
-                'file' => $file,
-                'import' => new LeaveRequestImport(
-                    $file->getClientOriginalName()
-                ),
-            ];
+        if (! collect(array_keys(self::FILES))->contains(fn($field) => $request->hasFile($field))) {
+            return back()->withErrors(['upload' => 'Pilih minimal satu file Excel.']);
         }
 
         $success = [];
         $errors = [];
 
-        foreach ($imports as $item) {
-            try {
-                DB::transaction(function () use ($item) {
-                    Excel::import(
-                        $item['import'],
-                        $item['file']
-                    );
-                });
+        foreach (self::FILES as $field => $info) {
+            if (! $request->hasFile($field)) {
+                continue;
+            }
 
-                $success[] = $item['name'];
+            $file = $request->file($field);
+            $originalName = $file->getClientOriginalName();
+            $status = 'success';
+            $errorMessage = null;
+
+            try {
+                // Each file is independent. On error, any changes by that file are rolled back.
+                DB::transaction(function () use ($file, $info, $originalName) {
+                    Excel::import(new $info['import']($originalName), $file);
+                });
+                $success[] = $info['label'];
             } catch (Throwable $e) {
                 report($e);
-
-                $errors[] = $item['name'] . ': ' . $e->getMessage();
+                $status = 'failed';
+                $errorMessage = Str::limit($e->getMessage(), 1500);
+                $errors[] = $info['label'] . ': gagal diproses. Periksa history atau log Laravel.';
             }
+
+            // Saved outside transaction, so failed attempts are preserved as history.
+            ImportHistory::create([
+                'report_type' => $info['label'],
+                'original_filename' => $originalName,
+                'file_size' => $file->getSize() ?: 0,
+                'status' => $status,
+                'error_message' => $errorMessage,
+                'completed_at' => now(),
+            ]);
         }
 
-        return back()
+        return redirect()->route('upload.index')
             ->with('import_success', $success)
             ->with('import_errors', $errors);
     }

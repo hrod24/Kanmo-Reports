@@ -73,7 +73,7 @@
         <div class="flex items-center justify-between gap-3 shrink-0">
             <div>
                 <h1 class="text-xl font-bold tracking-tight text-[#20263A]">
-                    Attendance Overview
+                    Attendance Overview - Wednesday, 14 October 2024
                 </h1>
 
                 <p class="mt-0.5 text-xs text-[#8B95AA]">

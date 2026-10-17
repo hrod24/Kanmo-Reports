@@ -55,7 +55,7 @@ class RestrictOfficeNetwork
 
             abort(
                 403,
-                'The Admin page can only be accessed through the office WiFi.'
+                'You can\'t access this page.'
             );
         }
 
