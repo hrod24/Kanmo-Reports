@@ -78,6 +78,39 @@
             </div>
         </form>
 
+        <section class="mt-6 rounded-2xl border border-slate-200
+                bg-white p-5 shadow-sm">
+
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="font-semibold text-slate-900">
+                        Import Progress
+                    </h2>
+                    <p class="mt-1 text-xs text-slate-500">
+                        Progress pemrosesan file Excel
+                    </p>
+                </div>
+
+                <button id="resume-button" type="button"
+                    class="hidden rounded-lg bg-blue-600 px-4 py-2
+                   text-xs font-medium text-white hover:bg-blue-700">
+                    Resume
+                </button>
+            </div>
+
+            <div id="progress-warning" role="alert"
+                class="mt-4 hidden rounded-lg bg-amber-50
+               p-3 text-sm text-amber-700">
+            </div>
+
+            <div id="progress-items" class="mt-4 space-y-3">
+                <p class="text-sm text-slate-400">
+                    Belum ada import aktif.
+                </p>
+            </div>
+
+        </section>
+
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-100 px-5 py-4">
                 <h2 class="font-semibold text-slate-900">Upload History</h2>
@@ -103,7 +136,7 @@
                                 <td class="max-w-xs break-all px-5 py-3">{{ $history->original_filename }}</td>
                                 <td class="px-5 py-3">
                                     <span
-                                        class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium {{ $history->status === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700' }}">{{ ucfirst($history->status) }}</span>
+                                        class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium {{ $history->status === 'success' ? 'bg-emerald-50 text-emerald-700' : ($history->status === 'failed' ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700') }}">{{ ucfirst($history->status) }}</span>
                                     @if ($history->status === 'failed')
                                         <p class="mt-1 max-w-sm break-words text-xs text-rose-600"
                                             title="{{ $history->error_message }}">
@@ -128,105 +161,234 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('upload-form');
-            const button = document.getElementById('import-button');
-            const zones = document.querySelectorAll('.drop-zone');
-            const inputs = document.querySelectorAll('.upload-input');
-            const maxBytes = 20 * 1024 * 1024;
-            let submitted = false;
+            const form = document.getElementById('upload-form'),
+                button = document.getElementById('import-button');
+            const inputs = [...document.querySelectorAll('.upload-input')],
+                list = document.getElementById('progress-items');
+            const resume = document.getElementById('resume-button'),
+                notice = document.getElementById('progress-warning');
+            const csrf = form.querySelector('[name="_token"]').value,
+                key = 'attendance_batch_active_ids';
+            const startUrl = @json(route('upload.store'));
+            const processTemplate = @json(route('upload.process', ['history' => '_ID_']));
+            const statusTemplate = @json(route('upload.progress', ['history' => '_ID_']));
+            let jobs = [],
+                busy = false;
+            const url = (tpl, id) => tpl.replace('_ID_', id);
 
-            function updateDisplay(input) {
-                const field = input.dataset.field;
-                const info = document.querySelector(`[data-info="${field}"]`);
-                const filename = document.querySelector(`[data-filename="${field}"]`);
-                const file = input.files[0];
-                if (!file) {
-                    info.classList.add('hidden');
-                    info.classList.remove('flex');
-                    filename.textContent = '';
-                    return;
-                }
-                filename.textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
-                info.classList.remove('hidden');
-                info.classList.add('flex');
+            function showFile(input) {
+                const field = input.dataset.field,
+                    info = document.querySelector(`[data-info="${field}"]`);
+                const label = document.querySelector(`[data-filename="${field}"]`),
+                    file = input.files[0];
+                label.textContent = file ? `${file.name} (${(file.size/1048576).toFixed(2)} MB)` : '';
+                info.classList.toggle('hidden', !file);
+                info.classList.toggle('flex', !!file);
             }
 
-            function validateFile(file) {
+            function valid(file) {
                 if (!/\.(xlsx|xls)$/i.test(file.name)) {
-                    alert('File harus berformat .xlsx atau .xls');
+                    alert('Gunakan .xlsx atau .xls');
                     return false;
                 }
-                if (file.size > maxBytes) {
-                    alert('Ukuran file maksimal 20 MB.');
+                if (file.size > 20 * 1048576) {
+                    alert('Maksimal 20 MB per file');
                     return false;
                 }
                 return true;
             }
-
-            inputs.forEach(input => {
-                input.addEventListener('change', () => {
-                    if (input.files.length && !validateFile(input.files[0])) input.value = '';
-                    updateDisplay(input);
-                });
-            });
-
-            zones.forEach(zone => {
+            inputs.forEach(i => i.addEventListener('change', () => {
+                if (i.files[0] && !valid(i.files[0])) i.value = '';
+                showFile(i);
+            }));
+            document.querySelectorAll('.drop-zone').forEach(zone => {
                 const input = zone.querySelector('input[type=file]');
-                ['dragenter', 'dragover'].forEach(name => zone.addEventListener(name, event => {
-                    event.preventDefault();
+                for (const n of ['dragenter', 'dragover']) zone.addEventListener(n, e => {
+                    e.preventDefault();
                     zone.classList.add('border-blue-500', 'bg-blue-50');
-                }));
-                ['dragleave', 'drop'].forEach(name => zone.addEventListener(name, event => {
-                    event.preventDefault();
-                    if (name === 'dragleave' && zone.contains(event.relatedTarget)) return;
+                });
+                for (const n of ['dragleave', 'drop']) zone.addEventListener(n, e => {
+                    e.preventDefault();
+                    if (n === 'dragleave' && zone.contains(e.relatedTarget)) return;
                     zone.classList.remove('border-blue-500', 'bg-blue-50');
-                }));
-                zone.addEventListener('drop', event => {
-                    const files = event.dataTransfer.files;
-                    if (files.length !== 1) {
-                        alert('Pilih satu file untuk setiap kotak upload.');
+                });
+                zone.addEventListener('drop', e => {
+                    if (e.dataTransfer.files.length !== 1) {
+                        alert('Satu file per kotak');
                         return;
                     }
-                    if (!validateFile(files[0])) return;
-                    const transfer = new DataTransfer();
-                    transfer.items.add(files[0]);
-                    input.files = transfer.files;
-                    updateDisplay(input);
+                    const f = e.dataTransfer.files[0];
+                    if (!valid(f)) return;
+                    const dt = new DataTransfer();
+                    dt.items.add(f);
+                    input.files = dt.files;
+                    showFile(input);
                 });
             });
-
-            document.querySelectorAll('.remove-file').forEach(remove => {
-                remove.addEventListener('click', () => {
-                    const input = document.querySelector(
-                        `.upload-input[data-field="${remove.dataset.remove}"]`);
-                    input.value = '';
-                    updateDisplay(input);
+            document.querySelectorAll('.remove-file').forEach(b => b.addEventListener('click', () => {
+                const input = document.querySelector(`.upload-input[data-field="${b.dataset.remove}"]`);
+                input.value = '';
+                showFile(input);
+            }));
+            document.addEventListener('dragover', e => {
+                if (e.dataTransfer?.types.includes('Files')) e.preventDefault();
+            });
+            document.addEventListener('drop', e => {
+                if (e.dataTransfer?.files.length) e.preventDefault();
+            });
+            async function api(url, opts = {}) {
+                const res = await fetch(url, {
+                    credentials: 'same-origin',
+                    ...opts,
+                    headers: {
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                        ...(opts.headers || {})
+                    }
                 });
-            });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw Error(data.message || `HTTP ${res.status}`);
+                return data;
+            }
 
-            // Prevent dropping outside upload zones from navigating away from the page.
-            document.addEventListener('dragover', event => {
-                if (event.dataTransfer?.types.includes('Files')) event.preventDefault();
-            });
-            document.addEventListener('drop', event => {
-                if (event.dataTransfer?.files.length) event.preventDefault();
-            });
-
-            form.addEventListener('submit', event => {
-                if (submitted) {
-                    event.preventDefault();
-                    return;
+            function render() {
+                list.replaceChildren();
+                if (!jobs.length) {
+                    const p = document.createElement('p');
+                    p.className = 'text-sm text-slate-400';
+                    p.textContent = 'Belum ada import aktif.';
+                    list.append(p);
                 }
-                const selected = Array.from(inputs).some(input => input.files.length > 0);
+                for (const j of jobs) {
+                    const box = document.createElement('div');
+                    box.className = 'rounded-lg border border-slate-200 p-3';
+                    const head = document.createElement('div');
+                    head.className = 'mb-2 flex justify-between gap-3 text-sm';
+                    const name = document.createElement('span');
+                    name.className = 'break-all font-medium';
+                    name.textContent = `${j.report_type}: ${j.original_filename}`;
+                    const status = document.createElement('span');
+                    status.className = 'shrink-0 text-xs ' + (j.status === 'failed' ? 'text-rose-600' : j.status ===
+                        'success' ? 'text-emerald-600' : 'text-blue-600');
+                    status.textContent = `${j.status} · ${j.percent}%`;
+                    head.append(name, status);
+                    box.append(head);
+                    const track = document.createElement('div');
+                    track.className = 'h-2 rounded-full bg-slate-100 overflow-hidden';
+                    const fill = document.createElement('div');
+                    fill.className = 'h-full ' + (j.status === 'failed' ? 'bg-rose-500' : j.status === 'success' ?
+                        'bg-emerald-500' : 'bg-blue-600');
+                    fill.style.width = j.percent + '%';
+                    track.append(fill);
+                    box.append(track);
+                    if (j.error_message) {
+                        const p = document.createElement('p');
+                        p.className = 'mt-2 text-xs text-rose-600';
+                        p.textContent = j.error_message;
+                        box.append(p);
+                    }
+                    list.append(box);
+                }
+                sessionStorage.setItem(key, JSON.stringify(jobs.filter(j => !['success', 'failed'].includes(j
+                    .status)).map(j => j.id)));
+                resume.classList.toggle('hidden', busy || !jobs.some(j => !['success', 'failed'].includes(j
+                    .status)));
+            }
+            async function run() {
+                if (busy) return;
+                busy = true;
+                button.disabled = true;
+                notice.classList.add('hidden');
+                render();
+                try {
+                    for (let i = 0; i < jobs.length; i++) {
+                        while (!['success', 'failed'].includes(jobs[i].status)) {
+                            jobs[i] = await api(url(processTemplate, jobs[i].id), {
+                                method: 'POST'
+                            });
+                            render();
+                        }
+                    }
+                } catch (e) {
+                    notice.textContent = `Terhenti: ${e.message}. Klik Resume untuk melanjutkan.`;
+                    notice.classList.remove('hidden');
+                } finally {
+                    busy = false;
+                    button.disabled = false;
+                    button.textContent = 'Import Data';
+                    render();
+                    if (jobs.length && jobs.every(j => ['success', 'failed'].includes(j.status))) setTimeout(
+                        () => location.reload(), 1200);
+                }
+            }
+            resume.addEventListener('click', run);
+            form.addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                if (busy) return;
+
+                const selected = inputs.some(input => input.files.length > 0);
+
                 if (!selected) {
-                    event.preventDefault();
                     alert('Pilih minimal satu file Excel.');
                     return;
                 }
-                submitted = true;
+
+                busy = true;
                 button.disabled = true;
-                button.textContent = 'Importing...';
+                button.textContent = 'Uploading...';
+
+                notice.classList.add('hidden');
+
+                try {
+                    const result = await api(startUrl, {
+                        method: 'POST',
+                        body: new FormData(form),
+                    });
+
+                    if (!Array.isArray(result.jobs) || !result.jobs.length) {
+                        throw new Error('Server tidak mengembalikan data import.');
+                    }
+
+                    // Simpan pekerjaan baru ke daftar progress
+                    jobs = result.jobs;
+
+                    // Simpan ID agar dapat dilanjutkan setelah halaman di-refresh
+                    sessionStorage.setItem(
+                        key,
+                        JSON.stringify(jobs.map(job => job.id))
+                    );
+
+                    render();
+
+                    // Lepaskan status busy agar run() dapat dimulai
+                    busy = false;
+
+                    // Jalankan pemrosesan 200 baris per request
+                    await run();
+
+                } catch (error) {
+                    console.error('Upload error:', error);
+
+                    notice.textContent = 'Upload gagal: ' + error.message;
+                    notice.classList.remove('hidden');
+
+                } finally {
+                    busy = false;
+                    button.disabled = false;
+                    button.textContent = 'Import Data';
+                }
             });
+            (async () => {
+                try {
+                    const ids = JSON.parse(sessionStorage.getItem(key) || '[]');
+                    if (!Array.isArray(ids) || !ids.length) return;
+                    jobs = await Promise.all(ids.map(id => api(url(statusTemplate, id))));
+                    render();
+                } catch (e) {
+                    sessionStorage.removeItem(key);
+                }
+            })();
         });
     </script>
 @endsection
