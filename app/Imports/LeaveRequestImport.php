@@ -14,6 +14,6 @@ class LeaveRequestImport extends BaseAttendanceImport
     }
     protected function identity(array $data): array
     {
-        return ['source_key' => $this->fingerprint($data, ['employee_id','leave_start_date','leave_end_date','leave_type','raised_on'])];
+        return ['source_key' => $this->fingerprint($data, ['employee_id','leave_start_date','leave_end_date','leave_type','raised_on', 'leave_credits'])];
     }
 }

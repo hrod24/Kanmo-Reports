@@ -92,7 +92,7 @@ class AttendanceBatchProcessor
             }
             $rows = [];
             for ($rowNumber = $nextRow; $rowNumber <= $endRow; $rowNumber++) {
-                $values = $sheet->rangeToArray("A{$rowNumber}:{$lastColumn}{$rowNumber}", null, false, false)[0] ?? [];
+                $values = $sheet->rangeToArray("A{$rowNumber}:{$lastColumn}{$rowNumber}", null, true, false)[0] ?? [];
                 $record = [];
                 foreach ($headings as $index => $heading) {
                     if ($heading !== '') $record[$heading] = $values[$index] ?? null;

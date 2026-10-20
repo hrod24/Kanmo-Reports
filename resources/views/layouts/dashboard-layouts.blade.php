@@ -17,7 +17,7 @@
     <div class="min-h-screen">
 
         {{-- Main Content --}}
-        <main >
+        <main class="flex flex-col overflow-hidden transition-all duration-300 h-dvh">
 
             {{-- Content Area --}}
             <div

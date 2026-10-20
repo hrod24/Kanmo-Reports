@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\AttendanceDashboardService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -12,10 +11,8 @@ class DashboardController extends Controller
     {
         $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
 
-        // Default to latest imported attendance date rather than current date;
-        // otherwise a newly installed dashboard may misleadingly show zero.
-        $date = $request->query('date')
-            ?: (DB::table('daily_attendances')->max('date') ?: now()->toDateString());
+        // Default: previous calendar day in the office timezone, never latest imported date.
+        $date = $request->query('date') ?: now('Asia/Jakarta')->subDay()->toDateString();
 
         return view('dashboard', [
             'summary' => $service->summarize($date),
