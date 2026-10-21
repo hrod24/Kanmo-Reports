@@ -12,8 +12,10 @@ Route::middleware([
 
     Route::redirect('/', '/dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/reports', [ReportController::class,'index'])->name('reports');
-    Route::get('/reports/{type}', [ReportController::class,'show'])->name('reports.show');
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports');
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports');
+    Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/{type}', [ReportController::class, 'show'])->name('reports.show');
     Route::get('/upload-data', [UploadController::class, 'index'])->name('upload.index');
     Route::post('/upload-data', [UploadController::class, 'store'])->name('upload.store');
     Route::get('/upload-data', [UploadController::class, 'index'])->name('upload.index');
