@@ -12,7 +12,7 @@ class DashboardController extends Controller
         $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
 
         // Default: previous calendar day in the office timezone, never latest imported date.
-        $date = $request->query('date') ?: now('Asia/Jakarta')->subDay()->toDateString();
+        $date = $request->query('date') ?: now('Asia/Jakarta')->previousWeekday()->toDateString();
 
         return view('dashboard', [
             'summary' => $service->summarize($date),
