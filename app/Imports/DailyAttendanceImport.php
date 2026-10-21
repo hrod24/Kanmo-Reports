@@ -38,7 +38,7 @@ class DailyAttendanceImport extends BaseAttendanceImport
         $mapping = array_combine($fields, $fields);
 
         // Nama kolom database => Header Excel
-        $mapping['business_unit'] = 'business_units';
+        $mapping['business_unit'] = 'business_unit';
 
         return $mapping;
     }

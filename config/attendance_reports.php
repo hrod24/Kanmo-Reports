@@ -4,7 +4,7 @@ return [
     'daily-attendance' => [
         'title' => 'Daily Attendance Report', 'table' => 'daily_attendances', 'date_column' => 'date', 'status_column' => 'status',
         'columns' => [
-            'employee_id'=>'Employee ID', 'business_unit' => 'Business Units', 'employee_name'=>'Employee Name', 'designation'=>'Designation', 'date'=>'Date',
+            'employee_id'=>'Employee ID', 'business_unit' => 'Business Unit', 'employee_name'=>'Employee Name', 'designation'=>'Designation', 'date'=>'Date',
             'shift_name'=>'Shift Name', 'scheduled_in_time'=>'Scheduled In Time', 'scheduled_out_time'=>'Scheduled Out Time',
             'actual_punch_in'=>'Actual Punch In', 'actual_punch_out'=>'Actual Punch Out', 'duration'=>'Duration',
             'duration_calculation_method'=>'Duration Calculation Method', 'late_in_by'=>'Late In By', 'early_out_by'=>'Early Out By',
