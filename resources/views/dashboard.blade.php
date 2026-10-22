@@ -62,14 +62,12 @@
                 <h1 class="text-lg font-bold tracking-tight text-slate-900 sm:text-4xl">
                     Attendance Overview - {{ $dateLabel }}
                 </h1>
-                <p class="mt-2 text-xs text-slate-500">
+                <p class="mt-2 text-lg text-slate-500">
                     @if ($lastUpload)
                         Last updated:
                         <time datetime="{{ ($lastUpload->completed_at ?? $lastUpload->created_at)->toIso8601String() }}"
                             class="font-medium text-slate-700">{{ ($lastUpload->completed_at ?? $lastUpload->created_at)->copy()->timezone('Asia/Jakarta')->format('d M Y, H:i') }}
                             WIB</time>
-                        <span class="block mt-1 break-all">{{ $lastUpload->report_type }} &middot;
-                            {{ $lastUpload->original_filename }}</span>
                     @else
                         Last updated: No successful uploads yet.
                     @endif
