@@ -16,7 +16,11 @@ class UploadController extends Controller
     public function index()
     {
         $histories = ImportHistory::query()->latest('id')->paginate(10);
-        return view('upload-data', compact('histories'));
+        $lastUploads = ImportHistory::query()
+            ->whereIn('id', ImportHistory::query()->selectRaw('MAX(id)')->where('status', 'success')->groupBy('report_type'))
+            ->get()->keyBy('report_type');
+
+        return view('upload-data', compact('histories', 'lastUploads'));
     }
 
     public function store(Request $request, AttendanceBatchProcessor $processor): JsonResponse

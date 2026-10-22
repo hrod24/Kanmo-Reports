@@ -68,6 +68,7 @@
                                 class="px-2 py-1 font-semibold rounded remove-file shrink-0 hover:bg-blue-100"
                                 data-remove="{{ $type['field'] }}" aria-label="Remove selected file">Remove</button>
                         </div>
+                        @include('partials.last-upload', ['lastUpload' => $lastUploads->get($type['title'])])
                     </section>
                 @endforeach
             </div>
