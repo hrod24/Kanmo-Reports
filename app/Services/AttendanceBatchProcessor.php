@@ -6,10 +6,9 @@ use App\Imports\AttendanceRegularizationImport;
 use App\Imports\DailyAttendanceImport;
 use App\Imports\LeaveRequestImport;
 use App\Imports\OnDutyImport;
+use App\Imports\EmployeeDetailsImport;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
-use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
-use PhpOffice\PhpSpreadsheet\Reader\Xls;
 use RuntimeException;
 
 class AttendanceBatchProcessor
@@ -21,37 +20,17 @@ class AttendanceBatchProcessor
         'attendance_regularization' => ['label' => 'Attendance Regularization', 'import' => AttendanceRegularizationImport::class, 'heading' => 6],
         'on_duty' => ['label' => 'On Duty', 'import' => OnDutyImport::class, 'heading' => 6],
         'leave_requests' => ['label' => 'Leave Requests', 'import' => LeaveRequestImport::class, 'heading' => 1],
+        'employee_details' => ['label' => 'Employee Details', 'import' => EmployeeDetailsImport::class, 'heading' => 1],
     ];
 
-    public function totalRows(
-        string $absolutePath,
-        int $headerRow
-    ): int {
-
-        $extension = strtolower(
-            pathinfo($absolutePath, PATHINFO_EXTENSION)
-        );
-
-        $reader = match ($extension) {
-            'xlsx' => new Xlsx(),
-            'xls' => new Xls(),
-            default => throw new RuntimeException(
-                'Unsupported Excel format.'
-            ),
-        };
-
+    public function totalRows(string $absolutePath, int $headerRow): int
+    {
+        $reader = IOFactory::createReaderForFile($absolutePath);
         $sheets = $reader->listWorksheetInfo($absolutePath);
-
-        if (empty($sheets)) {
-            throw new RuntimeException(
-                'Excel does not contain a worksheet.'
-            );
+        if (!$sheets) {
+            throw new RuntimeException('Excel does not contain a worksheet.');
         }
-
-        return max(
-            0,
-            (int) $sheets[0]['totalRows'] - $headerRow
-        );
+        return max(0, (int) $sheets[0]['totalRows'] - $headerRow);
     }
 
     public function process(string $absolutePath, string $type, string $originalFilename, int $nextRow, int $totalRows): int
@@ -87,12 +66,18 @@ class AttendanceBatchProcessor
                 $normalized = trim((string) preg_replace('/[^a-z0-9]+/', '_', $normalized), '_');
                 $headings[$i] = $normalized;
             }
-            if (!in_array('employee_id', $headings, true) || !in_array('employee_name', $headings, true)) {
-                throw new RuntimeException('Header Employee ID / Employee Name tidak ditemukan. Pastikan jenis file sesuai kotak upload.');
+            if ($type === 'employee_details') {
+                $required = ['employee_id', 'display_name', 'business_unit_org_element_1', 'department_org_element_2', 'employee_level_code'];
+            } else {
+                $required = ['employee_id', 'employee_name'];
+            }
+            $missing = array_diff($required, $headings);
+            if ($missing) {
+                throw new RuntimeException('Header Excel tidak sesuai: ' . implode(', ', $missing));
             }
             $rows = [];
             for ($rowNumber = $nextRow; $rowNumber <= $endRow; $rowNumber++) {
-                $values = $sheet->rangeToArray("A{$rowNumber}:{$lastColumn}{$rowNumber}", null, true, false)[0] ?? [];
+                $values = $sheet->rangeToArray("A{$rowNumber}:{$lastColumn}{$rowNumber}", null, false, false)[0] ?? [];
                 $record = [];
                 foreach ($headings as $index => $heading) {
                     if ($heading !== '') $record[$heading] = $values[$index] ?? null;

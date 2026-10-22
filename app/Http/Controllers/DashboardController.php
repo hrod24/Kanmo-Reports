@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ImportHistory;
 use App\Services\AttendanceDashboardService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,11 @@ class DashboardController extends Controller
 
         return view('dashboard', [
             'summary' => $service->summarize($date),
+            'lastUpload' => ImportHistory::query()
+                ->where('status', 'success')
+                ->orderByRaw('COALESCE(completed_at, created_at) DESC')
+                ->orderByDesc('id')
+                ->first(),
         ]);
     }
 }

@@ -13,12 +13,90 @@ class AttendanceDashboardService
         $date = Carbon::parse($date)->toDateString();
 
         // Only employees present in Daily Attendance on the selected date are scheduled.
-        $daily = DB::table('daily_attendances')
-            ->where('date', $date)
-            ->select('employee_id', 'status', 'shift_name', 'actual_punch_in', 'actual_punch_out', 'business_unit')
+
+        $allowedBusinessUnits = [
+            'BUSINESS DEVELOPMENT',
+            'CREATIVE & EXPERIENCE EXECUTION',
+            'DIGITAL, OMNICHANNEL & INTELLIGENT TECHNOLOGY',
+            'FASHION & ACCESSORIES',
+            'FASHION & ACCESSORIES 2',
+            'FINANCE',
+            'FOOTWEAR & ACTIVE',
+            'HUMAN RESOURCES',
+            'LIFESTYLE',
+            'PROJECT & MAINTENANCE',
+            'SHIPPING',
+            'THE COACH RESTAURANT',
+            'WAREHOUSE',
+        ];
+
+        $allowedEmploymentTypes = [
+            'ET00001',
+            'ET00002',
+            'ET00003',
+            'ET00004',
+            'ET00005',
+        ];
+
+        $daily = DB::table('daily_attendances as da')
+            // Employee wajib terdaftar di master.
+            ->join(
+                'employees as e',
+                'da.employee_id',
+                '=',
+                'e.employee_id'
+            )
+
+            // Employee Level harus termasuk Head Office.
+            ->join(
+                'employee_bands as eb',
+                'e.employee_level_code',
+                '=',
+                'eb.code'
+            )
+
+            // Business Unit harus memiliki mapping.
+            ->join(
+                'business_units as bu',
+                'e.business_unit_code',
+                '=',
+                'bu.code'
+            )
+            ->where('e.employee_id', '!=', 'ADMINAKV')
+
+            // Pilih tanggal attendance.
+            ->where('da.date', $date)
+
+            // Hanya Head Office.
+            ->where('eb.source', 'HEAD OFFICE')
+
+            // Hanya 13 Business Unit terpilih.
+            ->whereIn('bu.name', $allowedBusinessUnits)
+
+            // Hanya 5 Employment Type.
+            ->whereIn(
+                'e.employment_type_code',
+                $allowedEmploymentTypes
+            )
+
+            ->select(
+                'da.employee_id',
+                'e.display_name',
+                'e.department_code',
+                'da.status',
+                'da.shift_name',
+                'da.actual_punch_in',
+                'da.actual_punch_out',
+                'bu.name as business_unit'
+            )
             ->get()
-            ->filter(fn($row) => $this->id($row->employee_id) !== '')
-            ->groupBy(fn($row) => $this->id($row->employee_id));
+            ->filter(
+                fn($row) => $this->id($row->employee_id) !== ''
+            )
+            ->groupBy(
+                fn($row) => $this->id($row->employee_id)
+            );
+
 
         $ids = $daily->keys()->all();
         $scheduled = count($ids);
@@ -81,7 +159,7 @@ class AttendanceDashboardService
                 $this->hasValue($row->actual_punch_in)
                     || $this->hasValue($row->actual_punch_out)
                     || $this->isPresentStatus($row->status)
-                    || $this->isWeekOff($row->shift_name)
+                    || Str::lower(trim((string) $row->shift_name)) === 'week off'
             );
 
             $hasLeave = isset($leaveIds[$employeeId]);
@@ -104,16 +182,26 @@ class AttendanceDashboardService
                     'absent' => 0,
                     'on_leave' => 0,
                     'wfh' => 0,
+                    'absent_employees' => [],
                 ];
             }
             $businessUnits[$unit]['scheduled']++;
             if ($isPresent) {
-                $present++;
-                $businessUnits[$unit]['present']++;
+                ++$present;
+                ++$businessUnits[$unit]['present'];
             } else {
-                $absent++;
-                $businessUnits[$unit]['absent']++;
+                ++$absent;
+                ++$businessUnits[$unit]['absent'];
+
+                $employee = $attendanceRows->first();
+
+                $businessUnits[$unit]['absent_employees'][] = [
+                    'employee_id' => $employeeId,
+                    'display_name' => $employee->display_name ?: '-',
+                    'department' => $employee->department_code ?: '-',
+                ];
             }
+
             if ($hasLeave) {
                 $onLeave++;
                 $businessUnits[$unit]['on_leave']++;
@@ -147,11 +235,6 @@ class AttendanceDashboardService
             'pending approval',
             'approved',
         ], true);
-    }
-
-    private function isWeekOff(?string $shiftName): bool
-    {
-        return Str::lower(trim((string) $shiftName)) === 'week off';
     }
 
     private function isPresentStatus(?string $status): bool

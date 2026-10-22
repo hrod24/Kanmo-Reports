@@ -32,15 +32,9 @@ class DailyAttendanceImport extends BaseAttendanceImport
             'overtime_eligible',
             'overtime_type',
             'status',
-            'payment_status',
+            'payment_status'
         ];
-
-        $mapping = array_combine($fields, $fields);
-
-        // Nama kolom database => Header Excel
-        $mapping['business_unit'] = 'business_unit';
-
-        return $mapping;
+        return array_combine($fields, $fields);
     }
     protected function identity(array $data): array
     {

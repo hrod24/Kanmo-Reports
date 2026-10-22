@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('upload-form'),
-        button = document.getElementById('import-button');
+    const form = document.getElementById('upload-form');
+    if (!form) return;
+
+    const button = document.getElementById('import-button');
     const inputs = [...document.querySelectorAll('.upload-input')],
         list = document.getElementById('progress-items');
     const resume = document.getElementById('resume-button'),
@@ -10,6 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const startUrl = form.action;
     const processTemplate = form.dataset.processUrl;
     const statusTemplate = form.dataset.statusUrl;
+    if (!processTemplate || !statusTemplate) {
+        console.error('Upload route templates are missing from the form data attributes.');
+        return;
+    }
     let jobs = [],
         busy = false;
     const url = (tpl, id) => tpl.replace('_ID_', id);
@@ -198,6 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
             );
 
             render();
+            form.reset();
+            inputs.forEach(showFile);
 
             // Lepaskan status busy agar run() dapat dimulai
             busy = false;

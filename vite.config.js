@@ -10,6 +10,7 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/js/pages/upload-data.js',
                 'resources/js/pages/report.js',
+                'resources/js/pages/dashboard.js',
             ],
             refresh: true,
         }),

@@ -1,5 +1,4 @@
 @extends('layouts.dashboard-layouts')
-
 @section('title', 'Dashboard')
 
 @section('content')
@@ -56,25 +55,36 @@
         ];
     @endphp
 
-    <div class="space-y-4 pb-4">
+    <div class="pb-4 space-y-4">
         {{-- Header --}}
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h1 class="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
+                <h1 class="text-lg font-bold tracking-tight text-slate-900 sm:text-4xl">
                     Attendance Overview - {{ $dateLabel }}
                 </h1>
-                <p class="mt-1 text-xs text-slate-400">Kanmo Group · Daily Attendance Report</p>
+                <p class="mt-2 text-xs text-slate-500">
+                    @if ($lastUpload)
+                        Last updated:
+                        <time datetime="{{ ($lastUpload->completed_at ?? $lastUpload->created_at)->toIso8601String() }}"
+                            class="font-medium text-slate-700">{{ ($lastUpload->completed_at ?? $lastUpload->created_at)->copy()->timezone('Asia/Jakarta')->format('d M Y, H:i') }}
+                            WIB</time>
+                        <span class="block mt-1 break-all">{{ $lastUpload->report_type }} &middot;
+                            {{ $lastUpload->original_filename }}</span>
+                    @else
+                        Last updated: No successful uploads yet.
+                    @endif
+                </p>
             </div>
             <form method="GET" action="{{ route('dashboard') }}" class="flex flex-wrap items-center gap-2">
                 <span
-                    class="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm sm:inline-flex">
-                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Dashboard Overview
+                    class="items-center hidden gap-2 px-3 py-2 text-xs font-medium bg-white border shadow-sm rounded-xl border-slate-200 text-slate-600 sm:inline-flex">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Dashboard Overview
                 </span>
             </form>
         </div>
 
         @unless ($summary['has_data'])
-            <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800" role="status">
+            <div class="px-4 py-3 text-sm border rounded-xl border-amber-200 bg-amber-50 text-amber-800" role="status">
                 No Daily Attendance data was found for {{ $dateLabel }}. Upload that day's file or select another report
                 date. Zero values below do not mean all employees were absent.
             </div>
@@ -83,7 +93,7 @@
         {{-- Five summary cards --}}
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             @foreach ($cards as $card)
-                <article class="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <article class="min-w-0 p-4 bg-white border shadow-sm rounded-xl border-slate-200">
                     <div class="flex items-start justify-between gap-2">
                         <h2 class="text-lg font-medium text-slate-500">{{ $card['label'] }}</h2>
                         <div
@@ -137,18 +147,17 @@
 
         {{-- Business-unit section --}}
         <section>
-            <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
+            <div class="flex flex-wrap items-end justify-between gap-2 mb-3">
                 <div>
-                    <h2 class="text-base font-bold text-slate-900">Attendance by Business Unit</h2>
-                    <p class="mt-1 text-xs text-slate-400">Performance overview across business units</p>
+                    <h2 class="text-2xl font-bold text-slate-900">Attendance by Business Unit</h2>
                 </div>
                 <div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
                     <span class="inline-flex items-center gap-1.5"><span
-                            class="h-2 w-2 rounded-full bg-emerald-500"></span>Excellent ≥95%</span>
+                            class="w-2 h-2 rounded-full bg-emerald-500"></span>Excellent ≥95%</span>
                     <span class="inline-flex items-center gap-1.5"><span
-                            class="h-2 w-2 rounded-full bg-amber-500"></span>Warning ≥90%</span>
+                            class="w-2 h-2 rounded-full bg-amber-500"></span>Warning ≥90%</span>
                     <span class="inline-flex items-center gap-1.5"><span
-                            class="h-2 w-2 rounded-full bg-rose-500"></span>Below Target &lt;90%</span>
+                            class="w-2 h-2 rounded-full bg-rose-500"></span>Below Target &lt;90%</span>
                 </div>
             </div>
 
@@ -162,9 +171,12 @@
                                 $pct >= 95 ? 'text-emerald-600' : ($pct >= 90 ? 'text-amber-600' : 'text-rose-600');
                             $rating = $pct >= 95 ? 'Excellent' : ($pct >= 90 ? 'Warning' : 'Below Target');
                         @endphp
-                        <article
-                            class="flex min-h-32 min-w-0 flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                            <h3 class="min-h-10 break-words text-base font-medium leading-tight text-slate-500"
+                        <button type="button"
+                            class="flex flex-col justify-between w-full min-w-0 p-4 text-left transition bg-white border shadow-sm cursor-pointer business-unit-card min-h-32 rounded-xl border-slate-200 hover:border-blue-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            data-unit="{{ $unit['name'] }}"
+                            data-employees="{{ json_encode($unit['absent_employees'] ?? []) }}"
+                            aria-label="View absent employees in {{ $unit['name'] }}">
+                            <h3 class="text-base font-medium leading-tight break-words min-h-10 text-slate-500"
                                 title="{{ $unit['name'] }}">{{ $unit['name'] }}</h3>
                             <div>
                                 <p class="mb-3 text-2xl font-bold tracking-tight text-slate-900">
@@ -181,15 +193,63 @@
                                     <span class="font-medium {{ $textColor }}">{{ $rating }}</span>
                                 </div>
                             </div>
-                        </article>
+                        </button>
                     @endforeach
                 </div>
             @else
                 <div
-                    class="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
+                    class="p-6 text-sm text-center bg-white border border-dashed rounded-xl border-slate-300 text-slate-500">
                     No Business Unit data available for the selected date.
                 </div>
             @endif
         </section>
+
+
+        <dialog id="absent-modal"
+            class="m-auto w-[min(92vw,850px)] max-h-[85vh]
+           rounded-2xl border border-slate-200 bg-white
+           p-0 shadow-2xl backdrop:bg-slate-900/50">
+            <div class="flex items-start justify-between gap-4 px-6 py-4 border-b border-slate-200">
+                <div>
+                    <h2 id="absent-modal-title" class="text-lg font-bold text-slate-900">
+                        Absent Employees
+                    </h2>
+
+                    <p id="absent-modal-subtitle" class="mt-1 text-sm text-slate-500"></p>
+                </div>
+
+                <button type="button" id="close-absent-modal"
+                    class="px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-100"
+                    aria-label="Close">
+                    ✕
+                </button>
+            </div>
+
+            <div class="max-h-[60vh] overflow-auto">
+                <table class="min-w-full text-sm text-left">
+                    <thead class="sticky top-0 text-xs uppercase bg-slate-100 text-slate-600">
+                        <tr>
+                            <th class="px-5 py-3">No.</th>
+                            <th class="px-5 py-3">Employee ID</th>
+                            <th class="px-5 py-3">Employee Name</th>
+                            <th class="px-5 py-3">Department</th>
+                            <th class="px-5 py-3">Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="absent-modal-rows" class="divide-y divide-slate-100">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="px-6 py-4 text-right border-t border-slate-200">
+                <button type="button" id="close-absent-modal-footer"
+                    class="px-5 py-2 text-sm font-semibold text-white rounded-lg bg-slate-900">
+                    Close
+                </button>
+            </div>
+        </dialog>
+
     </div>
+    @vite('resources/js/pages/dashboard.js')
 @endsection
