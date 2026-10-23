@@ -167,6 +167,7 @@ test('reminders use the selected absent date and employee primary email for Team
             && $parameters['users'] === 'test+employee@example.com'
             && str_contains($parameters['message'], '2026-10-20')
             && str_contains($parameters['message'], 'EMP001')
+            && str_contains($parameters['message'], '<a href="https://kanmohris.com/ACHO.pdf">https://kanmohris.com/ACHO.pdf</a>')
             && $employees['EMP002']->teams_url === null
             && $employees['EMP003']->teams_url === null;
     })->assertSee('data-teams-reminder', false)->assertSee('Email not available');
@@ -179,11 +180,30 @@ test('reminders use the selected absent date and employee primary email for Team
 });
 
 test('reminder pagination preserves the selected date', function () {
-    for ($i = 1; $i <= 26; $i++) {
+    for ($i = 1; $i <= 1001; $i++) {
         insertDashboardAttendance('2026-10-20', sprintf('EMP%03d', $i));
     }
     DB::table('daily_attendances')->update(['status' => 'ABSENT']);
     $this->get('/reminders?date=2026-10-20&page=2')->assertOk()
-        ->assertViewHas('rows', fn ($rows) => $rows->total() === 26 && $rows->count() === 1 && $rows->firstItem() === 26)
+        ->assertViewHas('rows', fn ($rows) => $rows->total() === 1001 && $rows->count() === 1 && $rows->firstItem() === 1001)
         ->assertSee('date=2026-10-20', false);
+});
+
+test('reminder headers sort data and preserve filters', function () {
+    insertDashboardAttendance('2026-10-20', 'EMP001');
+    insertDashboardAttendance('2026-10-20', 'EMP002');
+    DB::table('daily_attendances')->update(['status' => 'ABSENT']);
+    DB::table('employees')->where('employee_id', 'EMP001')->update(['primary_email' => 'z@example.com']);
+    DB::table('employees')->where('employee_id', 'EMP002')->update(['primary_email' => 'a@example.com']);
+
+    $this->get('/reminders?date=2026-10-20&search=EMP&sort=employee_id&direction=desc')->assertOk()
+        ->assertViewHas('rows', fn ($rows) => $rows->first()->employee_id === 'EMP002')
+        ->assertSee('date=2026-10-20&amp;search=EMP&amp;sort=employee_id&amp;direction=asc', false)
+        ->assertSee('aria-sort="descending"', false);
+    $this->get('/reminders?date=2026-10-20&sort=primary_email&direction=asc')->assertOk()
+        ->assertViewHas('rows', fn ($rows) => $rows->first()->employee_id === 'EMP002');
+    $this->get('/reminders?date=2026-10-20&sort=primary_email&direction=desc')->assertOk()
+        ->assertViewHas('rows', fn ($rows) => $rows->first()->employee_id === 'EMP001');
+    $this->get('/reminders?date=2026-10-20&sort=unknown')->assertOk()->assertViewHas('sort', 'employee_name');
+    $this->getJson('/reminders?direction=invalid')->assertUnprocessable();
 });

@@ -33,7 +33,7 @@
                 'fg' => 'text-violet-600',
             ],
             [
-                'label' => 'WFH',
+                'label' => 'WFH (HOD Approval Required)',
                 'value' => number_format($summary['wfh']),
                 'note' => $summary['scheduled']
                     ? number_format(($summary['wfh'] / $scheduled) * 100, 1) . '% of scheduled'

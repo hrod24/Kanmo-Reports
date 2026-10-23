@@ -8,6 +8,8 @@
         </div>
 
         <form method="GET" action="{{ route('reminders.index') }}" class="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <input type="hidden" name="sort" value="{{ $sort }}">
+            <input type="hidden" name="direction" value="{{ $direction }}">
             <label class="block">
                 <span class="mb-1 block text-xs font-medium text-slate-600">Absent Date</span>
                 <input type="date" name="date" value="{{ $date }}" required class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
@@ -28,8 +30,23 @@
                 <table class="w-full min-w-max text-left text-sm">
                     <thead class="bg-slate-100 text-xs uppercase text-slate-600">
                         <tr>
-                            @foreach (['No.', 'Reminder', 'Employee ID', 'Employee Name', 'Business Unit', 'Department', 'Email', 'Absent Date'] as $heading)
-                                <th class="px-4 py-3">{{ $heading }}</th>
+                            <th class="px-4 py-3">No.</th>
+                            <th class="px-4 py-3">Reminder</th>
+                            @foreach ($columns as $key => $heading)
+                                @php
+                                    $newDirection = $sort === $key && $direction === 'asc' ? 'desc' : 'asc';
+                                    $sortUrl = route('reminders.index', array_merge(request()->except('page'), [
+                                        'date' => $date, 'sort' => $key, 'direction' => $newDirection,
+                                    ]));
+                                @endphp
+                                <th class="px-4 py-3" aria-sort="{{ $sort === $key ? ($direction === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                                    <a href="{{ $sortUrl }}" class="inline-flex items-center gap-1 hover:text-blue-600">
+                                        {{ $heading }}
+                                        @if ($sort === $key)
+                                            <span aria-hidden="true">{{ $direction === 'asc' ? '↑' : '↓' }}</span>
+                                        @endif
+                                    </a>
+                                </th>
                             @endforeach
                         </tr>
                     </thead>
