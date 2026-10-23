@@ -1,6 +1,6 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-K1RMAGMS.css",
+    "file": "assets/app-CH5NODYH.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -15,13 +15,19 @@
     "isEntry": true
   },
   "resources/js/pages/dashboard.js": {
-    "file": "assets/dashboard-ByBDy96I.js",
+    "file": "assets/dashboard-EpaHfH3v.js",
     "name": "dashboard",
     "src": "resources/js/pages/dashboard.js",
     "isEntry": true
   },
+  "resources/js/pages/reminder.js": {
+    "file": "assets/reminder-C0a0MU-2.js",
+    "name": "reminder",
+    "src": "resources/js/pages/reminder.js",
+    "isEntry": true
+  },
   "resources/js/pages/report.js": {
-    "file": "assets/report-DQ3uewSf.js",
+    "file": "assets/report-h-Z4ESMt.js",
     "name": "report",
     "src": "resources/js/pages/report.js",
     "isEntry": true

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Employee;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -82,7 +83,7 @@ class AttendanceDashboardService
             ->select(
                 'da.employee_id',
                 'e.display_name',
-                'e.department_code',
+                'da.date',
                 'da.status',
                 'da.shift_name',
                 'da.actual_punch_in',
@@ -198,7 +199,7 @@ class AttendanceDashboardService
                 $businessUnits[$unit]['absent_employees'][] = [
                     'employee_id' => $employeeId,
                     'display_name' => $employee->display_name ?: '-',
-                    'department' => $employee->department_code ?: '-',
+                    'date' => $employee->date,
                 ];
             }
 
@@ -212,7 +213,20 @@ class AttendanceDashboardService
             }
         }
 
-        $units = array_values(array_map(function ($unit) {
+        $absentIds = collect($businessUnits)->pluck('absent_employees')->flatten(1)->pluck('employee_id');
+        $departments = collect();
+        foreach ($absentIds->chunk(500) as $chunk) {
+            $departments = $departments->merge(
+                Employee::with('department')->whereIn('employee_id', $chunk)->get()
+            );
+        }
+        $departments = $departments->keyBy('employee_id');
+
+        $units = array_values(array_map(function ($unit) use ($departments) {
+            $unit['absent_employees'] = array_map(function ($employee) use ($departments) {
+                $employee['department'] = $departments->get($employee['employee_id'])?->department?->department_name ?: '-';
+                return $employee;
+            }, $unit['absent_employees']);
             $unit['percentage'] = round(100 * $unit['present'] / $unit['scheduled'], 1);
             return $unit;
         }, $businessUnits));

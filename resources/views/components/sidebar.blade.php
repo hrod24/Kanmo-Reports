@@ -130,6 +130,14 @@
             </a>
 
             {{-- Upload Data --}}
+            <a href="{{ route('reminders.index') }}"
+                class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition {{ request()->routeIs('reminders.*') ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900' }}">
+                <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+                </svg>
+                <span>Reminder</span>
+            </a>
+
             <a
                 href="{{ route('upload.index') }}"
                 class="

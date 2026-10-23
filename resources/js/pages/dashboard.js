@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         employee.employee_id ?? '-',
                         employee.display_name ?? '-',
                         employee.department ?? '-',
-                        'Absent',
+                        employee.date ?? '-',
                     ];
 
                     values.forEach((value, i) => {
@@ -60,10 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         cell.textContent = value;
 
-                        if (i === 4) {
-                            cell.className +=
-                                ' font-semibold text-rose-600';
-                        }
                     });
                 });
 

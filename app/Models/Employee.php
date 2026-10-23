@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Employee extends Model
 {
-    protected $fillable = ['employee_id', 'display_name', 'business_unit_code', 'department_code', 'employee_level_code', 'employment_type_code'];
+    protected $fillable = ['employee_id', 'display_name', 'business_unit_code', 'department_code', 'employee_level_code', 'employment_type_code', 'primary_email'];
     public function businessUnit(): BelongsTo
     {
         return $this->belongsTo(BusinessUnit::class, 'business_unit_code', 'code');
@@ -32,5 +32,10 @@ class Employee extends Model
     public function attendanceRegularizations(): HasMany
     {
         return $this->hasMany(AttendanceRegularization::class, 'employee_id', 'employee_id');
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'department_code', 'department_code');
     }
 }

@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     form.querySelector('[name="search"]').addEventListener('input', scheduleSearch);
     for (const name of ['from', 'to', 'status', 'per_page']) {
-        form.querySelector(`[name="${name}"]`).addEventListener('change', () => {
+        form.querySelector(`[name="${name}"]`)?.addEventListener('change', () => {
             clearTimeout(debounce);
             filterNow();
         });
@@ -104,7 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
         form.querySelector('[name="search"]').value = '';
         form.querySelector('[name="from"]').value = '';
         form.querySelector('[name="to"]').value = '';
-        form.querySelector('[name="status"]').value = '';
+        const status = form.querySelector('[name="status"]');
+        if (status) status.value = '';
         form.querySelector('[name="per_page"]').value = '25';
         currentSort = 'id';
         currentDirection = 'desc';

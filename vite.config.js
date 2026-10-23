@@ -11,6 +11,7 @@ export default defineConfig({
                 'resources/js/pages/upload-data.js',
                 'resources/js/pages/report.js',
                 'resources/js/pages/dashboard.js',
+                'resources/js/pages/reminder.js',
             ],
             refresh: true,
         }),

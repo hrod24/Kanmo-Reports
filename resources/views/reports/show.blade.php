@@ -34,6 +34,7 @@
                 <span class="block mb-1 text-xs font-medium text-slate-600">To</span>
                 <input type="date" name="to" value="{{ request('to') }}" class="w-full px-2 py-2 text-sm border rounded-lg outline-none border-slate-200 focus:border-blue-500">
             </label>
+            @if ($settings['status_column'])
             <label class="block">
                 <span class="block mb-1 text-xs font-medium text-slate-600">Status</span>
                 <select name="status" class="w-full px-2 py-2 text-sm bg-white border rounded-lg outline-none border-slate-200 focus:border-blue-500">
@@ -43,6 +44,7 @@
                     @endforeach
                 </select>
             </label>
+            @endif
             <label class="block">
                 <span class="block mb-1 text-xs font-medium text-slate-600">Rows</span>
                 <select name="per_page" class="w-full px-2 py-2 text-sm bg-white border rounded-lg outline-none border-slate-200 focus:border-blue-500">

@@ -33,6 +33,7 @@ class EmployeeDetailsImport implements ToCollection, WithHeadingRow, WithChunkRe
                 'department_code' => $this->clean($raw['department_org_element_2'] ?? null),
                 'employee_level_code' => $this->clean($raw['employee_level_code'] ?? null),
                 'employment_type_code' => $this->clean($raw['employment_type_code'] ?? null),
+                'primary_email' => $this->clean($raw['primary_email'] ?? null),
             ];
             // Do not overwrite valid existing master data with blank fields.
             $values = array_filter($values, fn ($v) => $v !== null);

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReminderController;
 
 
 Route::middleware([
@@ -12,6 +13,7 @@ Route::middleware([
 
     Route::redirect('/', '/dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/reminders', [ReminderController::class, 'index'])->name('reminders.index');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports');
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');

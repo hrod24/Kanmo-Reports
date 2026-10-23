@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'absent-employees' => [
+        'title' => 'Absent Employee Report', 'date_column' => 'date', 'status_column' => null,
+        'columns' => [
+            'employee_id' => 'Employee ID', 'employee_name' => 'Employee Name',
+            'business_unit' => 'Business Unit', 'department' => 'Department', 'date' => 'Absent Date',
+        ],
+    ],
     'daily-attendance' => [
         'title' => 'Daily Attendance Report', 'table' => 'daily_attendances', 'date_column' => 'date', 'status_column' => 'status',
         'columns' => [

@@ -187,7 +187,7 @@
                                 </div>
                                 <div class="mt-2 flex flex-wrap items-center justify-between gap-1 text-[10px]">
                                     <span class="text-slate-400">{{ number_format($unit['scheduled']) }} scheduled ·
-                                        {{ number_format($unit['present']) }} present</span>
+                                        {{ number_format($unit['present']) }} present · {{ number_format($unit['absent']) }} absent</span>
                                     <span class="font-medium {{ $textColor }}">{{ $rating }}</span>
                                 </div>
                             </div>
@@ -217,8 +217,7 @@
                 </div>
 
                 <button type="button" id="close-absent-modal"
-                    class="px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-100"
-                    aria-label="Close">
+                    class="px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-100" aria-label="Close">
                     ✕
                 </button>
             </div>
@@ -231,7 +230,7 @@
                             <th class="px-5 py-3">Employee ID</th>
                             <th class="px-5 py-3">Employee Name</th>
                             <th class="px-5 py-3">Department</th>
-                            <th class="px-5 py-3">Status</th>
+                            <th class="px-5 py-3">Absent Date</th>
                         </tr>
                     </thead>
 
